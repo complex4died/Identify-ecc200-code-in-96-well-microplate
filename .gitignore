@@ -33,3 +33,9 @@ env/
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Generated outputs (existing tracked examples remain in the repository)
+/dir_output/
+/dir_work/
+/saved_image.*
+/saved_image_*

@@ -55,8 +55,25 @@ def print_plate(mapping):
             print(f"  {result.text!r}：{reason}")
 
 
+def save_matrix(output_path, mapping):
+    """按真实行列索引导出矩阵；默认 8 行×12 列，另带行列标题。"""
+    rows = max(well.row for well in mapping.wells) + 1
+    cols = max(well.column for well in mapping.wells) + 1
+    matrix = [["" for _ in range(cols)] for _ in range(rows)]
+    for well in mapping.wells:
+        matrix[well.row][well.column] = well.sample_id
+    matrix_path = output_path.with_name(output_path.stem + "_matrix.csv")
+    matrix_path.parent.mkdir(parents=True, exist_ok=True)
+    with matrix_path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow([""] + list(range(1, cols + 1)))
+        for row, values in enumerate(matrix):
+            writer.writerow([chr(65 + row)] + values)
+    return matrix_path
+
+
 def save_plate(output_path, annotated, mapping):
-    """保存标注图和同名 CSV；CSV 固定包含所有孔位，异常编号只进入候选列。"""
+    """保存标注图、逐孔明细、矩阵和未分配结果；保留原有二项返回值。"""
     if output_path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}:
         raise ValueError("输出图片请使用 PNG、JPG、BMP 或 TIFF 扩展名。")
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,4 +93,5 @@ def save_plate(output_path, annotated, mapping):
         writer.writerow(["content", "position", "reason"])
         for result, reason in mapping.unassigned:
             writer.writerow([result.text, str(result.position), reason])
+    save_matrix(output_path, mapping)
     return csv_path, unassigned_path

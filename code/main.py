@@ -37,7 +37,9 @@ def main():
         if should_save:
             csv_path, unassigned_path = save_plate(output_path, annotated, mapping)
             print(f"标注图：{output_path.resolve()}")
-            print(f"孔位表：{csv_path.resolve()}")
+            print(f"孔位明细表：{csv_path.resolve()}")
+            matrix_path = output_path.with_name(output_path.stem + "_matrix.csv")
+            print(f"孔位矩阵：{matrix_path.resolve()}")
             print(f"未分配结果表：{unassigned_path.resolve()}")
         else:
             print("未保存结果。")

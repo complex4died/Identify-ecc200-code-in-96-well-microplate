@@ -4,12 +4,29 @@ from pathlib import Path
 import cv2
 
 
+def resolve_output_path(input_path, output_path):
+    """现有目录或无扩展名路径作为目录，生成输入文件名_mapped.png。"""
+    output_path = Path(output_path).expanduser()
+    if output_path.is_dir() or not output_path.suffix:
+        if output_path.exists() and not output_path.is_dir():
+            raise ValueError(f"输出目录被同名文件占用：{output_path}")
+        output_path = output_path / f"{Path(input_path).stem}_mapped.png"
+    if output_path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}:
+        raise ValueError("-o 请指定输出目录或 PNG、JPG、BMP、TIFF 图片路径。")
+    if Path(input_path).resolve() == output_path.resolve():
+        raise ValueError("输出路径不能与原始照片相同。")
+    for parent in output_path.parents:
+        if parent.exists() and not parent.is_dir():
+            raise ValueError(f"输出目录被同名文件占用：{parent}")
+    return output_path
+
+
 def load_input(include_options=False):
     """读取照片；默认保留原来的二项返回值，主程序可额外获取参数。"""
     parser = argparse.ArgumentParser(description="ECC200 解码、空间排序和孔位映射。")
     parser.add_argument("-i", "--input", required=True, type=Path, help="输入照片路径")
-    parser.add_argument("-o", "--output", type=Path, default=Path("saved_image.jpg"),
-                        help="标注图路径，同时保存同名 CSV，默认 saved_image.jpg")
+    parser.add_argument("-o", "--output", type=Path, default=Path("saved_image.png"),
+                        help="输出目录或图片路径；目录默认生成 输入文件名_mapped.png；不指定则为 saved_image.png")
     parser.add_argument("--rows", type=int, default=8, help="孔板行数，默认 8")
     parser.add_argument("--cols", type=int, default=12, help="孔板列数，默认 12")
     calibration = parser.add_mutually_exclusive_group()
@@ -24,8 +41,10 @@ def load_input(include_options=False):
         parser.error("--select-grid 需要窗口，不能与 --no-show 同用；可改用 --corners。")
     if not args.input.is_file():
         parser.error(f"输入文件不存在：{args.input}")
-    if args.input.resolve() == args.output.resolve():
-        parser.error("输出路径不能与原始照片相同。")
+    try:
+        args.output = resolve_output_path(args.input, args.output)
+    except ValueError as error:
+        parser.error(str(error))
     image = cv2.imread(str(args.input))
     if image is None:
         parser.error(f"无法读取照片，请检查格式或文件是否损坏：{args.input}")

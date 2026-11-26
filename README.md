@@ -1,5 +1,18 @@
 # ECC200 图片识别与孔位映射
 
+## 安装依赖
+
+已在 macOS、Python 3.12 环境完成测试。新环境可按下列方式安装：
+
+```bash
+conda create -n ecc200 python=3.12
+conda activate ecc200
+python -m pip install -r requirements.txt
+```
+
+`requirements.txt` 固定了本次通过测试的 NumPy、OpenCV 和 ZXing-C++ 版本。
+Windows 尚未进行实机验证；高拍仪采集尚未接入，当前输入为本地图片。
+
 在 `ecc200` 环境中，从项目目录运行：
 
 ```bash
@@ -8,7 +21,7 @@ python code/main.py -i datas/simulation_real_1.jpg -o dir_work/plate_mapped.png
 ```
 
 默认 8 行、12 列，以图片左上为 A1，从左到右、从上到下输出 A1～H12。
-图片窗口按 `s` 保存原分辨率标注图、同名孔位 CSV 和 `_unassigned.csv` 未分配结果表。
+图片窗口按 `s` 保存原分辨率标注图、同名孔位明细 CSV、`_matrix.csv` 孔位矩阵和 `_unassigned.csv` 未分配结果表。
 窗口只缩放预览，解码和保存都使用原图分辨率。
 
 直接保存、不打开窗口：
@@ -16,6 +29,20 @@ python code/main.py -i datas/simulation_real_1.jpg -o dir_work/plate_mapped.png
 ```bash
 python code/main.py -i datas/simulation_real_1.jpg -o dir_work/plate_mapped.png --no-show
 ```
+
+## 输出目录和格式
+
+`-o` 可以直接指定目录（现有目录或无扩展名路径）。不存在的目录在保存时创建：
+
+```bash
+python code/main.py -i datas/simulation_real_1.jpg -o dir_work --no-show
+```
+
+该命令生成 `dir_work/simulation_real_1_mapped.png`、同名 `.csv`、`_matrix.csv` 和 `_unassigned.csv`。
+无扩展名路径统一视为目录，例如 `-o results` 会创建 `results/`。
+若想指定文件名，写完整扩展名，例如 `-o dir_work/result.png` 或 `-o dir_work/result.jpg`。
+省略 `-o` 时默认输出当前目录下的 `saved_image.png` 和配套 CSV。
+不支持的扩展名在启动时提示，不再等按下保存键才报错。
 
 ## 模块职责
 
@@ -61,6 +88,13 @@ python code/main.py -i datas/ecc200_demo.png -o dir_work/demo.png --rows 2 --col
 ```
 
 `simulation_1.png` 是普通 QR Code 模拟图，不是 ECC200；本程序只解码 Data Matrix。
+
+## 孔位矩阵 CSV
+
+保存时自动额外生成 `输出文件名_matrix.csv`，无需新增参数。
+默认数据区为 **12 列、8 行**，列名 1～12、行名 A～H；包含标题后文件为 9 行、13 列。
+单元格内容为对应孔位的样本编号。未读出、位置歧义、冲突或重复编号均留空，详情查阅逐孔明细表。
+不会把后面的编号前移。矩阵尺寸跟随 `--rows` 和 `--cols`，也支持 2×2 示例图。
 
 ## 状态和输出
 

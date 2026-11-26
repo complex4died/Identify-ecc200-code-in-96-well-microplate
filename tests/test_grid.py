@@ -12,7 +12,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 from function.def_grid import map_to_plate
-from function.def_output import draw_plate, save_plate
+from function.def_output import draw_plate, save_plate, save_matrix
 
 
 def barcode(x, y, text):
@@ -115,8 +115,40 @@ class GridTests(unittest.TestCase):
             self.assertEqual(rows[1]['sample_id'], '')
             self.assertEqual(rows[2]['sample_id'], 'A3')
             self.assertEqual(rows[-1]['well'], 'H12')
+            with path.with_name('mapped_matrix.csv').open(encoding='utf-8-sig', newline='') as f:
+                matrix = list(csv.reader(f))
+            self.assertEqual(len(matrix), 9)
+            self.assertTrue(all(len(row) == 13 for row in matrix))
+            self.assertEqual(matrix[0], [''] + [str(i) for i in range(1, 13)])
+            self.assertEqual([row[0] for row in matrix[1:]], list('ABCDEFGH'))
+            self.assertEqual(matrix[1][1:4], ['A1', '', 'A3'])
+            self.assertEqual(matrix[8][12], 'H12')
             self.assertTrue(unassigned_path.is_file())
             self.assertTrue(np.array_equal(cv2.imread(str(path)), annotated))
+
+
+    def test_matrix_uses_coordinates_and_preserves_csv_content(self):
+        # 矩阵必须依据孔位索引写入，不能依赖结果列表顺序或样本内容排序。
+        records = [barcode(100,100,'00123'), barcode(200,100,'sample,"中文"')]
+        mapping = map_to_plate(records, rows=2, cols=2,
+                               corners=[[100,100],[200,100],[200,200],[100,200]])
+        mapping.wells.reverse()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = save_matrix(Path(tmp)/'small.png', mapping)
+            with path.open(encoding='utf-8-sig', newline='') as f:
+                matrix = list(csv.reader(f))
+            self.assertEqual(matrix, [['','1','2'], ['A','00123','sample,"中文"'], ['B','','']])
+
+    def test_matrix_leaves_review_cells_blank(self):
+        corners = [[100,100],[1200,100],[1200,800],[100,800]]
+        mapping = map_to_plate([barcode(100,100,'x'), barcode(105,100,'y'),
+                                barcode(200,100,'same'), barcode(300,100,'same'),
+                                barcode(445,100,'boundary')], corners=corners)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = save_matrix(Path(tmp)/'review.png', mapping)
+            with path.open(encoding='utf-8-sig', newline='') as f:
+                matrix = list(csv.reader(f))
+            self.assertTrue(all(value == '' for row in matrix[1:] for value in row[1:]))
 
 
 if __name__ == '__main__':
