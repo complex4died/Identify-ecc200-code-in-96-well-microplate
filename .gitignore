@@ -1,0 +1,35 @@
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon\r\r
+.AppleDouble
+.AppleDB
+
+# ==========================================
+# 2. R 语言与 RStudio 相关
+# ==========================================
+.Rhistory
+.RData
+.Rdata
+.Ruserdata
+.Rproj.user/
+
+# ==========================================
+# 3. Python 相关（如果有混用）
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+.pytest_cache/
+
+# ==========================================
+# 4. 常见代码编辑器（VS Code / JetBrains）
+# ==========================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
